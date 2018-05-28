@@ -102,3 +102,9 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+run_flask_on_free_port.py
+.idea/dictionaries/liant.xml
+.idea/Mimir.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/workspace.xml

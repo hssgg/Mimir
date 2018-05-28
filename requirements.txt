@@ -1,0 +1,5 @@
+cefpython3
+Flask
+PyInstaller
+wxPython
+Nuitka
