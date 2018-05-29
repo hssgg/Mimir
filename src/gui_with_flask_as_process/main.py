@@ -24,29 +24,31 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+#
 
-
-import wx
-from cefpython3 import cefpython as cef
-import platform
-import sys
 import os
+import sys
+import socket
+import platform
+import multiprocessing
+from contextlib import closing
+import wx
 import wx.adv
+from cefpython3 import cefpython as cef
 
-import concurrent.futures
-import threading
-from flask_app import app as flask_app
-from utils import find_free_port
+from web import run_flask
 
-WindowUtils = cef.WindowUtils()
+
+def find_free_port():
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(('', 0))
+        return s.getsockname()[1]
+
 
 # Configuration
 WIDTH = 1024
 HEIGHT = 768
-
 WINDOWS_TITLE = "example"
-
-flask_port = find_free_port()
 
 
 class CustomTaskBarIcon(wx.adv.TaskBarIcon):
@@ -55,7 +57,8 @@ class CustomTaskBarIcon(wx.adv.TaskBarIcon):
     def __init__(self, parent):
         wx.adv.TaskBarIcon.__init__(self)
         self.parent = parent
-        self.SetIcon(wx.Icon(os.path.join(os.path.abspath(os.path.dirname(__file__)), "resources", "icon.png"), wx.BITMAP_TYPE_PNG))
+        self.SetIcon(wx.Icon(os.path.join(os.path.abspath(os.path.dirname(__file__)), "static", "icon.ico"),
+                             wx.BITMAP_TYPE_ICO))
         self.Bind(wx.adv.EVT_TASKBAR_LEFT_DOWN, self.on_task_bar_left_click)
         self.Bind(wx.EVT_MENU, self.close_app, id=self.MENU_CLOSE)
 
@@ -75,8 +78,10 @@ class CustomTaskBarIcon(wx.adv.TaskBarIcon):
 
 class MainFrame(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY, title=WINDOWS_TITLE, size=(WIDTH, HEIGHT), style=wx.SYSTEM_MENU | wx.CAPTION | wx.MINIMIZE_BOX)
-        self.SetIcon(wx.Icon(os.path.join(os.path.abspath(os.path.dirname(__file__)), "resources", "icon.png"), wx.BITMAP_TYPE_PNG))
+        wx.Frame.__init__(self, parent=None, id=wx.ID_ANY, title=WINDOWS_TITLE, size=(WIDTH, HEIGHT),
+                          style=wx.SYSTEM_MENU | wx.CAPTION | wx.MINIMIZE_BOX)
+        self.SetIcon(wx.Icon(os.path.join(os.path.abspath(os.path.dirname(__file__)), "static", "icon.ico"),
+                             wx.BITMAP_TYPE_ICO))
         self.browser = None
         self.tbIcon = CustomTaskBarIcon(self)
         self.parent = parent
@@ -86,8 +91,9 @@ class MainFrame(wx.Frame):
 
         self.browser_panel = wx.Panel(self, style=wx.WANTS_CHARS)
         self.browser_panel.Bind(wx.EVT_SIZE, self.on_size)
-
-
+        self.flask_port = find_free_port()
+        self.flask_process = multiprocessing.Process(target=run_flask, kwargs={"port": self.flask_port})
+        self.flask_process.start()
         self.embed_browser()
         self.Show()
         self.Centre()
@@ -97,13 +103,12 @@ class MainFrame(wx.Frame):
         (width, height) = self.browser_panel.GetClientSize().Get()
         assert self.browser_panel.GetHandle(), "Window handle not available yet"
         window_info.SetAsChild(self.browser_panel.GetHandle(), [0, 0, width, height])
-        self.browser = cef.CreateBrowserSync(window_info, url="http://127.0.0.1:{}".format(flask_port))
-        # self.browser = cef.CreateBrowserSync(window_info, url="http://127.0.0.1:5000")
+        self.browser = cef.CreateBrowserSync(window_info, url="http://127.0.0.1:{}".format(self.flask_port))
 
     def on_size(self, event):
         if not self.browser:
             return
-        WindowUtils.OnSize(self.browser_panel.GetHandle(), 0, 0, 0)
+        cef.WindowUtils().OnSize(self.browser_panel.GetHandle(), 0, 0, 0)
 
         self.browser.NotifyMoveOrResizeStarted()
 
@@ -115,6 +120,7 @@ class MainFrame(wx.Frame):
         self.browser.ParentWindowWillClose()
         event.Skip()
         self.browser = None
+        self.flask_process.terminate()
 
     def on_minimize(self, event):
         if self.IsIconized():
@@ -157,9 +163,6 @@ class CefApp(wx.App):
 
 
 def main():
-    flask_thread = threading.Thread(target=flask_app.run, kwargs={"port": flask_port})
-    flask_thread.daemon = True
-    flask_thread.start()
     sys.excepthook = cef.ExceptHook  # To shutdown all CEF processes on error
     settings = {}
     cef.DpiAware.EnableHighDpiSupport()
@@ -170,8 +173,8 @@ def main():
     cef.Shutdown()
 
 
-
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     print("CEF Python {ver}".format(ver=cef.__version__))
     print("Python {ver} {arch}".format(ver=platform.python_version(), arch=platform.architecture()[0]))
     print("wxPython {ver}".format(ver=wx.version()))

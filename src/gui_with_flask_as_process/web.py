@@ -25,11 +25,28 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import socket
-from contextlib import closing
+import os
+import sys
+from flask import Flask
+from flask import render_template, request
+
+if getattr(sys, 'frozen', False):
+    template_folder = os.path.join(sys._MEIPASS, 'templates')
+    static_folder = os.path.join(sys._MEIPASS, 'static')
+    app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+else:
+    app = Flask(__name__)
 
 
-def find_free_port():
-    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
+@app.route('/')
+def hello_world():
+    q = "1+1=2,2+2=4"
+    return render_template('index.html', q=q)
+
+
+def run_flask(*args, **kwargs):
+    app.run(*args, **kwargs)
+
+
+if __name__ == '__main__':
+    run_flask()
