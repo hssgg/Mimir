@@ -35,6 +35,8 @@ from contextlib import closing
 import wx
 import wx.adv
 from cefpython3 import cefpython as cef
+import logging
+logging.basicConfig(filename='error.log',level=logging.DEBUG)
 
 from web import run_flask
 
@@ -164,7 +166,13 @@ class CefApp(wx.App):
 
 def main():
     sys.excepthook = cef.ExceptHook  # To shutdown all CEF processes on error
-    settings = {}
+    settings = {
+        "context_menu": {
+            "enabled": False
+        },
+        "ignore_certificate_errors": True,
+        "remote_debugging_port": -1
+    }
     cef.DpiAware.EnableHighDpiSupport()
     cef.Initialize(settings=settings)
     app = CefApp(False)
@@ -175,7 +183,7 @@ def main():
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
-    print("CEF Python {ver}".format(ver=cef.__version__))
-    print("Python {ver} {arch}".format(ver=platform.python_version(), arch=platform.architecture()[0]))
-    print("wxPython {ver}".format(ver=wx.version()))
+    # print("CEF Python {ver}".format(ver=cef.__version__))
+    # print("Python {ver} {arch}".format(ver=platform.python_version(), arch=platform.architecture()[0]))
+    # print("wxPython {ver}".format(ver=wx.version()))
     main()

@@ -30,6 +30,7 @@ import sys
 from flask import Flask
 from flask import render_template, request
 
+
 if getattr(sys, 'frozen', False):
     template_folder = os.path.join(sys._MEIPASS, 'templates')
     static_folder = os.path.join(sys._MEIPASS, 'static')

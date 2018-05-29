@@ -25,13 +25,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# How to Build Exe
-# USE nuitka:
-# python -m nuitka --windows-disable-console  --recurse-all --output-dir=..\dist\ --standalone run_the_flask_as_a_thread_and_start_it_with_the_gui.py
-#
-# USE pyinstaller:
-# pyinstaller --distpath ..\dist run_the_flask_as_a_thread_and_start_it_with_the_gui.py
-#
 
 import os
 import sys
