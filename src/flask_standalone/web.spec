@@ -3,10 +3,13 @@
 block_cipher = None
 
 
-a = Analysis(['-'],
-             pathex=['D:\\Documents\\GitHub\\Mimir\\src\\gui_with_flask_as_process'],
+a = Analysis(['web.py'],
+             pathex=['C:\\Users\\liant\\Documents\\GitHub\\Mimir\\src\\flask_standalone'],
              binaries=[],
-             datas=[],
+             datas=[
+             ('.\\static', 'static'),
+             ('.\\templates', 'templates')
+              ],
              hiddenimports=[],
              hookspath=[],
              runtime_hooks=[],
@@ -18,16 +21,12 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
-          exclude_binaries=True,
-          name='-',
+          a.binaries,
+          a.zipfiles,
+          a.datas,
+          name='web',
           debug=False,
           strip=False,
           upx=True,
+          runtime_tmpdir=None,
           console=True )
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               name='-')
